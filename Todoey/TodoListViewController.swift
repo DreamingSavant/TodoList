@@ -19,7 +19,7 @@ class TodoListViewController: UITableViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         
-        if let items = UserDefaults.standard.array(forKey: "ToDoListArray") as? [String] {
+        if let items = defaults.array(forKey: "TodoListArray") as? [String] {
             itemArray = items
         }
         
@@ -72,7 +72,6 @@ class TodoListViewController: UITableViewController {
             
             //saving items to program using userdefaults
             self.defaults.set(self.itemArray, forKey: "TodoListArray")
-            
             
             self.tableView.reloadData()
             
