@@ -13,22 +13,30 @@ class TodoListViewController: UITableViewController {
     
     var itemArray = [Item]()
     
-    let defaults = UserDefaults.standard
+    //NSCoder
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+//userdefaults code below
+//    let defaults = UserDefaults.standard
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         
+        
+        //NSCoder
+        print(dataFilePath!)
+        
         let newItem = Item()
         newItem.title = "Hello World!"
         itemArray.append(newItem)
         
-        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
-            itemArray = items
-        }
+        //UserDefaults again below
+//        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
+//            itemArray = items
+//        }
         
         
-        
+        loadItems()
     }
 
     override func didReceiveMemoryWarning() {
@@ -72,6 +80,7 @@ class TodoListViewController: UITableViewController {
 //        } else {
 //            itemArray[indexPath.row].done = false
 //        }
+        saveItems()
         tableView.reloadData()
 //            if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark {
 //            tableView.cellForRow(at: indexPath)?.accessoryType = .none
@@ -103,7 +112,9 @@ class TodoListViewController: UITableViewController {
             self.itemArray.append(newItem)
             
             //saving items to program using userdefaults
-            self.defaults.set(self.itemArray, forKey: "TodoListArray")
+//            self.defaults.set(self.itemArray, forKey: "TodoListArray")
+            
+           self.saveItems()
             
             self.tableView.reloadData()
             
@@ -119,6 +130,29 @@ class TodoListViewController: UITableViewController {
         present(alert, animated: true, completion:  nil)
         
         
+    }
+    //two items below correspond to NSCoder
+    func saveItems() {
+        //NSCoder start
+        let encoder = PropertyListEncoder()
+        
+        do{
+            let data = try encoder.encode(self.itemArray)
+            try data.write(to: self.dataFilePath!)
+        } catch {
+            print("Error encoding item array: \(error)")
+        } //NScoder end
+    }
+    
+    func loadItems() {
+        if let data = try? Data(contentsOf: dataFilePath!) {
+           let decoder = PropertyListDecoder()
+            do {
+                itemArray = try decoder.decode([Item].self, from: data)
+            } catch {
+                print("Error decoding item array: \(error)")
+            }
+        }
     }
     
     
