@@ -11,7 +11,7 @@ import UIKit
 class TodoListViewController: UITableViewController {
 
     
-    var itemArray = ["Find Mike","Buy Eggos","Destroy Demogorgon"]
+    var itemArray = [Item]()
     
     let defaults = UserDefaults.standard
     
@@ -19,7 +19,11 @@ class TodoListViewController: UITableViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         
-        if let items = defaults.array(forKey: "TodoListArray") as? [String] {
+        let newItem = Item()
+        newItem.title = "Hello World!"
+        itemArray.append(newItem)
+        
+        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
             itemArray = items
         }
         
@@ -37,24 +41,49 @@ class TodoListViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
-
-        cell.textLabel?.text = itemArray[indexPath.row]
+        //let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
+        //code constant "cell" below makes a cell its own and not reusable like the ones above^^^
+        
+        let item = itemArray[indexPath.row]
+        
+        let cell =  UITableViewCell(style: .default, reuseIdentifier: "ToDoItemCell")
+        
+        cell.textLabel?.text = item.title
+        
+        //code below is shortened version of commented out if statement below
+        cell.accessoryType = item.done == true ? .checkmark : .none
+        
+//        if item.done == true{
+//            cell.accessoryType = .checkmark
+//        } else {
+//            cell.accessoryType = .none
+//        }
+        
         return cell
     }
     
     // MARK - TableView Delegate Methods
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-            if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark {
-            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-                tableView.deselectRow(at: indexPath, animated: true)
-            } else {
-                tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-                
-                
-                tableView.deselectRow(at: indexPath, animated: true)
-        }
+        
+        itemArray[indexPath.row].done = !itemArray[indexPath.row].done
+        //code above is the same at commented if-else statement below
+//        if itemArray[indexPath.row].done == false {
+//            itemArray[indexPath.row].done = true
+//        } else {
+//            itemArray[indexPath.row].done = false
+//        }
+        tableView.reloadData()
+//            if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark {
+//            tableView.cellForRow(at: indexPath)?.accessoryType = .none
+//                tableView.deselectRow(at: indexPath, animated: true)
+//            } else {
+//                tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
+//
+//
+//                tableView.deselectRow(at: indexPath, animated: true)
+//        }
 //        tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark ? .none : .checkmark
+        tableView.deselectRow(at: indexPath, animated: true)
     }
     
     // MARK - Add New Items
@@ -68,7 +97,10 @@ class TodoListViewController: UITableViewController {
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             //what will happen once the user clicks the Add Item button on our UIAlert
             print(textField.text as Any)
-            self.itemArray.append(textField.text!)
+            
+            let newItem = Item()
+            newItem.title = textField.text!
+            self.itemArray.append(newItem)
             
             //saving items to program using userdefaults
             self.defaults.set(self.itemArray, forKey: "TodoListArray")
