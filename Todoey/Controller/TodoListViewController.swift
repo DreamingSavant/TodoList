@@ -7,11 +7,23 @@
 //
 
 import UIKit
+import CoreData
 
 class TodoListViewController: UITableViewController {
 
     
     var itemArray = [Item]()
+    
+    var selectedCategory: Category? {
+        didSet{
+            loadItems()
+        }
+    }
+    
+    //Used for coreData constant below
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    
+    let request: NSFetchRequest<Item> = Item.fetchRequest()
     
     //NSCoder
     let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
@@ -25,18 +37,17 @@ class TodoListViewController: UITableViewController {
         
         //NSCoder
         print(dataFilePath!)
-        
-        let newItem = Item()
-        newItem.title = "Hello World!"
-        itemArray.append(newItem)
+       
+//        let newItem = Item()
+//        newItem.title = "Hello World!"
+//        itemArray.append(newItem)
         
         //UserDefaults again below
 //        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
 //            itemArray = items
 //        }
         
-        
-        loadItems()
+        loadItems(with: request)
     }
 
     override func didReceiveMemoryWarning() {
@@ -74,6 +85,9 @@ class TodoListViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
+        
+//        context.delete(itemArray[indexPath.row])
+//        itemArray.remove(at: indexPath.row)
         //code above is the same at commented if-else statement below
 //        if itemArray[indexPath.row].done == false {
 //            itemArray[indexPath.row].done = true
@@ -107,9 +121,16 @@ class TodoListViewController: UITableViewController {
             //what will happen once the user clicks the Add Item button on our UIAlert
             print(textField.text as Any)
             
-            let newItem = Item()
+            
+            let newItem = Item(context: self.context)
             newItem.title = textField.text!
+            newItem.done = false
+            newItem.parentCategory = self.selectedCategory
             self.itemArray.append(newItem)
+            
+            
+            //setting up core data below
+            
             
             //saving items to program using userdefaults
 //            self.defaults.set(self.itemArray, forKey: "TodoListArray")
@@ -134,36 +155,82 @@ class TodoListViewController: UITableViewController {
     //two items below correspond to NSCoder
     func saveItems() {
         //NSCoder start
-        let encoder = PropertyListEncoder()
-        
+//        let encoder = PropertyListEncoder()
         do{
-            let data = try encoder.encode(self.itemArray)
-            try data.write(to: self.dataFilePath!)
+            //core data below
+            try context.save()
+            //NsCoder code commented out
+//            let data = try encoder.encode(self.itemArray)
+//            try data.write(to: self.dataFilePath!)
         } catch {
-            print("Error encoding item array: \(error)")
+            print("Error saving context: \(error)")
         } //NScoder end
+        self.tableView.reloadData()
     }
     
-    func loadItems() {
-        if let data = try? Data(contentsOf: dataFilePath!) {
-           let decoder = PropertyListDecoder()
-            do {
-                itemArray = try decoder.decode([Item].self, from: data)
-            } catch {
-                print("Error decoding item array: \(error)")
-            }
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil) {
+//        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        
+        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+        
+        if let additionalPredicate = predicate {
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additionalPredicate])
+        } else {
+            request.predicate = categoryPredicate
         }
+//        let compoundPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate])
+//
+//        request.predicate = compoundPredicate
+        
+        do {
+            
+            itemArray = try context.fetch(request)
+       
+        } catch {
+            
+            print("Error fetching data from context: \(error)")
+            
+        }
+        
+
     }
-    
-    
-//    override func tableView(_ tableView: UITableView, didDeselectRowAt indexPath: IndexPath) {
-//        if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark {
-//            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-//        } else {
-//            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-//        }
-//    }
     
     
 }
-
+// MARK: - SearchBar methods
+extension TodoListViewController: UISearchBarDelegate {
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+//        let request : NSFetchRequest<Item> = Item.fetchRequest()
+        // format key on realm website
+        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        
+        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        
+        
+        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+        
+        searchBar.showsCancelButton = true
+       loadItems(with: request, predicate: predicate)
+        
+        tableView.reloadData()
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0 {
+            loadItems()
+            searchBar.resignFirstResponder()
+            tableView.reloadData()
+        }
+    }
+    
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        
+        searchBar.text = ""
+        searchBar.showsCancelButton = false
+        searchBar.endEditing(true)
+        
+        loadItems()
+        tableView.reloadData()
+    }
+}
