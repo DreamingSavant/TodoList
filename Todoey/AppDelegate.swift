@@ -8,6 +8,7 @@
 
 import UIKit
 import CoreData
+import RealmSwift
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -20,6 +21,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         //below shows the path to defaults file..userdefaults
 //        print(NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).last! as String)
+       
+        print(Realm.Configuration.defaultConfiguration.fileURL!)
+        
+        
+        do {
+            let realm = try Realm()
+            print("Hello: \(realm)")
+            } catch {
+            print("Error initializing new realm \(error)")
+        }
+        
         return true
     }
 
